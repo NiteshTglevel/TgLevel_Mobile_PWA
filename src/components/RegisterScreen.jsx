@@ -1,84 +1,224 @@
-"use client";
+                                                                    "use client";
 import React, { useState } from 'react';
 import { Button } from './Button';
-// import { api } from '@/utils/apiHelper'; // Import Axios helper
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
+import { updateProfile } from '@/redux/userSlice';
+import { api } from '@/utils/apiHelper';
+import PWAInstallButton from './PWAInstallButton';
 
-export const RegisterScreen = ({ onBack, onNext, buttonText }) => {
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [error, setError] = useState("");
-  const [countryCode, setCountryCode] = useState("+91");
-  const [isLoading, setIsLoading] = useState(false); // 🟢 Nayi state loading ke liye
+export const RegisterScreen = () => {
+  const router = useRouter();
+  const dispatch = useDispatch();
 
-  const validateAndNext = async () => {
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '']);
+  const [isAgreed, setIsAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // --- Step 1: Send OTP ---
+  const handleSendOtp = async () => {
     const regex = /^[6789]\d{9}$/;
-    
-    if (!phoneNumber) {
-      setError("Please enter mobile number");
-      return;
-    } 
-    if (!regex.test(phoneNumber)) {
-      setError("Number must be 10 digits and start with 7, 8, or 9");
-      return;
-    } 
-    
-    setError("");
-    setIsLoading(true); // Button spinner on
+    if (!phoneNumber) { setError('Please enter mobile number'); return; }
+    if (!regex.test(phoneNumber)) { setError('Number must be 10 digits and start with 6, 7, 8, or 9'); return; }
 
+    setError('');
+    setIsLoading(true);
     try {
-      // 🟢 SEND OTP API CALL
-      const response = await api.post('/auth/send-otp', {
-        mobile: phoneNumber
-      });
-
+      const response = await api.post('/auth/send-otp', { mobile: phoneNumber });
       if (response.data.status === true) {
-        // Success! Go to next screen and pass the phone number
-        onNext(phoneNumber); 
+        setOtpSent(true);
       } else {
-        setError(response.data.message || "Failed to send OTP.");
+        setError(response.data.message || 'Failed to send OTP.');
       }
-    } catch (err) {
-      setError("Server error. Please try again.");
-      console.error(err);
+    } catch {
+      setError('Server error. Please try again.');
     } finally {
-      setIsLoading(false); // Button spinner off
+      setIsLoading(false);
     }
   };
 
-  const handleInputChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ""); 
+  // --- Step 2: Verify OTP ---
+  const handleVerify = async () => {
+    if (!isAgreed) return;
+    const enteredOtp = otp.join('');
+    if (enteredOtp.length < 4) { setError('Please enter the complete 4-digit code.'); return; }
+
+    setError('');
+    setIsLoading(true);
+    try {
+      const response = await api.post('/auth/verify-otp', {
+        mobile: phoneNumber,
+        otp: Number(enteredOtp),
+      });
+
+      if (response.data.status === true) {
+        localStorage.setItem('auth_token', response.data.token);
+        dispatch(updateProfile({ isNewUser: false, hasCompletedOnboarding: true }));
+        router.push('/chat');
+      } else {
+        setError('Invalid OTP. Please try again.');
+      }
+    } catch {
+      setError('Verification failed. Check your connection.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpChange = (value, index) => {
+    if (isNaN(value) || value.length > 1) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (error) setError('');
+    if (value !== '' && index < 3) document.getElementById(`otp-${index + 1}`)?.focus();
+  };
+
+  const handleKeyDown = (e, index) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      document.getElementById(`otp-${index - 1}`)?.focus();
+    }
+  };
+
+  const handleResend = async () => {
+    setOtp(['', '', '', '']);
+    setError('');
+    setIsLoading(true);
+    try {
+      await api.post('/auth/send-otp', { mobile: phoneNumber });
+    } catch {
+      setError('Failed to resend OTP.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '');
     if (value.length <= 10) {
       setPhoneNumber(value);
-      if (error) setError(""); 
+      if (error) setError('');
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen px-6 pt-12 bg-white max-w-md mx-auto font-sans">
-      {/* Back Button */}
-      {/* <button onClick={onBack} className="w-10 h-10 flex items-center justify-center border border-gray-100 rounded-lg mb-12 shadow-sm active:scale-95 transition-all">
-        <span className="text-xl text-black">{"<"}</span>
-      </button> */}
 
-      <h2 className="text-[32px] font-bold text-black leading-tight mb-10">
-        Welcome to <br /> TG Levels
+      {otpSent && (
+        <button
+          onClick={() => { setOtpSent(false); setOtp(['', '', '', '']); setError(''); }}
+          className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center mb-6 hover:bg-gray-50 transition-colors"
+        >
+          <span className="text-2xl text-black">{"<"}</span>
+        </button>
+      )}
+
+      <h2 className="text-[32px] font-bold text-black leading-tight mb-2">
+        {otpSent ? 'OTP Verification' : <>Welcome to <br /> TG Levels</>}
       </h2>
 
-      {/* Country Code + Input */}
-      <div className={`flex items-center h-16 w-full rounded-xl border ${error ? 'border-red-500' : 'border-gray-100'} shadow-[0px_4px_10px_rgba(0,0,0,0.1)] transition-all overflow-hidden`}>
-        <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className="h-full px-1 bg-transparent text-gray-700 font-medium outline-none border-r border-gray-100 cursor-pointer">
-          <option value="+91" className='text-black'>+91 (IN)</option>
+      {otpSent && (
+        <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+          Enter the verification code sent to +91 {phoneNumber}.
+        </p>
+      )}
+
+      {!otpSent && (
+        <div className="mt-5">
+          <PWAInstallButton variant="banner" />
+        </div>
+      )}
+
+      {/* Phone Number Input */}
+      <div className={`flex items-center h-16 w-full rounded-xl border mt-6 ${error && !otpSent ? 'border-red-500' : 'border-gray-100'} shadow-[0px_4px_10px_rgba(0,0,0,0.1)] transition-all overflow-hidden`}>
+        <select
+          value={countryCode}
+          onChange={(e) => setCountryCode(e.target.value)}
+          disabled={otpSent}
+          className="h-full px-1 bg-transparent text-gray-700 font-medium outline-none border-r border-gray-100 cursor-pointer disabled:opacity-60"
+        >
+          <option value="+91" className="text-black">+91 (IN)</option>
         </select>
-        <input type="tel" value={phoneNumber} onChange={handleInputChange} placeholder="Enter your mobile number" className="flex-1 h-full px-4 bg-transparent text-black outline-none placeholder:text-gray-400 font-medium"/>
+        <input
+          type="tel"
+          value={phoneNumber}
+          onChange={handlePhoneChange}
+          disabled={otpSent}
+          placeholder="Enter your mobile number"
+          className="flex-1 h-full px-4 bg-transparent text-black outline-none placeholder:text-gray-400 font-medium disabled:opacity-60"
+        />
       </div>
 
-      {error && <p className="text-red-500 text-xs mt-2 ml-1">{error}</p>}
+      {error && !otpSent && <p className="text-red-500 text-xs mt-2 ml-1">{error}</p>}
 
-      <div className="mt-9 w-full">
-        {/* Loading state button me handle karni hogi agar aapke <Button> me support hai */}
-        <Button onClick={validateAndNext} disabled={isLoading}>
-          {isLoading ? "Sending..." :"Register"}
-        </Button>
+      {/* OTP Fields (shown after OTP sent) */}
+      {otpSent && (
+        <>
+          <div className="flex justify-between gap-4 mt-8 mb-2 mx-4">
+            {otp.map((digit, i) => (
+              <input
+                key={i}
+                id={`otp-${i}`}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={digit}
+                onChange={(e) => handleOtpChange(e.target.value, i)}
+                onKeyDown={(e) => handleKeyDown(e, i)}
+                className="w-14 h-14 border border-gray-200 rounded-xl text-center text-black text-2xl font-bold focus:border-[#228B22] focus:ring-1 focus:ring-[#228B22] outline-none transition-all"
+              />
+            ))}
+          </div>
+
+          {error && <p className="text-red-500 text-xs text-center mt-2 mb-2">{error}</p>}
+
+          <div className="flex items-center gap-2 mt-5 mb-8">
+            <input
+              type="checkbox"
+              id="terms"
+              className="w-4 h-4 accent-[#228B22] cursor-pointer"
+              checked={isAgreed}
+              onChange={(e) => setIsAgreed(e.target.checked)}
+            />
+            <label htmlFor="terms" className="text-xs text-gray-900 cursor-pointer">
+              I Agree To The{' '}
+              <Link href="/TermsCondition" className="text-blue-500 underline">
+                Terms &amp; Conditions
+              </Link>
+            </label>
+          </div>
+        </>
+      )}
+
+      <div className="w-full mt-6">
+        {!otpSent ? (
+          <Button onClick={handleSendOtp} disabled={isLoading}>
+            {isLoading ? 'Sending...' : 'Send OTP'}
+          </Button>
+        ) : (
+          <Button
+            onClick={handleVerify}
+            disabled={!isAgreed || isLoading}
+            className={`transition-all ${(!isAgreed || isLoading) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+          >
+            {isLoading ? 'Verifying...' : 'Verify'}
+          </Button>
+        )}
       </div>
+
+      {otpSent && (
+        <p className="text-center text-sm text-gray-500 mt-auto pt-6">
+          Didn&apos;t receive code?{' '}
+          <button onClick={handleResend} className="text-[#228B22] font-bold hover:underline ml-1">
+            Resend
+          </button>
+        </p>
+      )}
     </div>
   );
 };

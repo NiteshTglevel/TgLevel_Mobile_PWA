@@ -120,7 +120,7 @@ export default function MessageCard({ message, showTag }) {
             {/* 3. METADATA (Time, Tag, Views) */}
             <div className="flex items-center justify-between mt-3 pt-1 gap-2 w-full">
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[12px] text-blue-600 font-medium tracking-tight">#{message.id ? message.id.replace(/\D/g, '') : '123'}</span>
+                <span className="text-[12px] text-blue-600 font-medium tracking-tight">#{message.id ? String(message.id).slice(-6) : '123'}</span>
                 
                 {showTag && message.tag && (
                   <span className="border border-[#228b22] text-black px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium tracking-tight bg-white">

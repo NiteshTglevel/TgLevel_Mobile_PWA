@@ -1,11 +1,15 @@
+"use client";
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
-import { toggleUserMode } from '@/redux/userSlice'; // Redux action change kiya
+import { toggleUserMode } from '@/redux/userSlice';
+import PWAInstallButton from './PWAInstallButton';
+import { useRouter } from 'next/navigation';
 
 export default function Header() {
   const dispatch = useDispatch();
+  const router = useRouter();
   const { userData, unreadNotifications } = useSelector((state) => state.user);
   const { userType, avatar, gender, daysLeft } = userData;
   const isPremium = userType === "premium";
@@ -64,9 +68,14 @@ export default function Header() {
       
       {/* 2. Right-side Icons Group */}
       <div className="flex items-center ml-auto gap-2">
-        <div className="w-8 h-8 bg-[#04386C] rounded-full flex items-center justify-center shrink-0">
+        <PWAInstallButton />
+
+        <button
+          onClick={() => router.push('/support-chat')}
+          className="w-8 h-8 bg-[#04386C] rounded-full flex items-center justify-center shrink-0"
+        >
           <Image src="/newCustomer.png" alt="Support" width={29} height={14} />
-        </div>
+        </button>
 
         {/* Profile Pic with Initials fallback if no image */}
         {/* <div className="w-[28.12px] h-[28.64px] rounded-full  border-[#228B22] bg-white flex items-center justify-center shrink-0 overflow-hidden">
