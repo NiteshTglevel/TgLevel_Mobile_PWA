@@ -44,9 +44,9 @@ export default function Header() {
       
       {/* 1. Dynamic Plan Badge */}
       <div ref={dropdownRef} className="relative">
-        <div onClick={handleBadgeClick} role="button" tabIndex={0}  className={`flex items-center py-1.5 cursor-pointer transition-all duration-300 w-61.25 h-8.5 ${isPremium ? 'justify-between pl-3 pr-2 bg-linear-to-br from-[#b79c4f] via-[#f7ebba] to-[#b79c4f] shadow-[0_4px_12px_rgba(0,0,0,0.12)] border border-white rounded-lg' : 'justify-center bg-white border-[1.5px] border-[#e11d48] rounded-[10px] shadow-sm'}`}>
+        <div onClick={handleBadgeClick} role="button" tabIndex={0}  className={`flex items-center py-1.5 cursor-pointer transition-all duration-300 w-61.25 h-8.5 ${isPremium ? 'justify-between pl-3 pr-2 bg-white border-[1.5px] border-[#228B22] rounded-[10px] shadow-sm' : 'justify-center bg-white border-[1.5px] border-[#e11d48] rounded-[10px] shadow-sm'}`}>
           <span className={`text-[12px] sm:text-[11px] font-bold text-black tracking-tight truncate ${isPremium ? 'pr-2' : ''}`}>
-            {isPremium ? `Premium validity - 26/03/2026 (${daysLeft} days)` : 'Free validity'}
+            {isPremium ? `Free trial validity - 26/03/2026 (${daysLeft} days)` : `Trial Expired`}
           </span>
           {isPremium && (
             <div onClick={handleChevronClick} className="flex items-center justify-center w-4 h-4 shrink-0 hover:bg-black/10 rounded-sm transition-colors">
@@ -59,7 +59,7 @@ export default function Header() {
         {isPremium && open && (
           <div className="absolute top-10.5 left-0 w-61.25 bg-white border border-gray-800 rounded-2xl shadow-lg p-4 animate-in fade-in slide-in-from-top-2 z-50">
             <div className="flex flex-col gap-4 text-[14px] text-black">
-              <div className="flex justify-between items-center"><span className="font-bold">Account:</span><span className="capitalize">{userType}</span></div>
+              <div className="flex justify-between items-center"><span className="font-bold">Account:</span><span>Free</span></div>
               <div className="flex justify-between items-center"><span className="font-bold">Remaining:</span><span>{daysLeft} days</span></div>
             </div>
           </div>

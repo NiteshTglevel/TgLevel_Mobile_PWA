@@ -2,9 +2,10 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { CheckCheck, Eye, X, Star } from 'lucide-react'; 
-import { useSelector } from 'react-redux'; 
+import { CheckCheck, Eye, X, Star } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from "framer-motion"; // 🟢 Added framer motion
+import { useRouter } from 'next/navigation';
 
 // --- ADVANCED SMART TEXT PARSER ---
 const parseSmartText = (text) => {
@@ -40,9 +41,10 @@ const parseSmartText = (text) => {
 };
 
 export default function MessageCard({ message, showTag }) {
+  const router = useRouter();
   const userType = useSelector((state) => state.user.userData.userType);
   const isPremium = userType === "premium";
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
 
@@ -163,7 +165,7 @@ export default function MessageCard({ message, showTag }) {
                   </svg>
                 </div>
                 <span className="text-[14px] font-bold text-gray-900 mb-3.5 tracking-tight">Premium Trade</span>
-                <button className="bg-[#218b32] hover:bg-[#1a7328] text-white text-[13px] font-semibold py-2 px-4 rounded-xl w-full transition-transform active:scale-95 shadow-sm">
+                <button onClick={() => router.push('/support-chat')} className="bg-[#218b32] hover:bg-[#1a7328] text-white text-[13px] font-semibold py-2 px-4 rounded-xl w-full transition-transform active:scale-95 shadow-sm">
                   Talk to us
                 </button>
               </div>
